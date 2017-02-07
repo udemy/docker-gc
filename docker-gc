@@ -57,7 +57,9 @@ DRY_RUN=${DRY_RUN:=0}
 EXCLUDE_DEAD=${EXCLUDE_DEAD:=0}
 REMOVE_VOLUMES=${REMOVE_VOLUMES:=0}
 EXCLUDE_VOLUMES_IDS_FILE=${EXCLUDE_VOLUMES_IDS_FILE:=/etc/docker-gc-exclude-volumes}
-VOLUME_DELETE_ONLY_DRIVER=${VOLUME_DELETE_ONLY_DRIVER:=locale}
+VOLUME_DELETE_ONLY_DRIVER=${VOLUME_DELETE_ONLY_DRIVER:=local}
+REMOVE_NETWORKS=${REMOVE_NETWORKS:=0}
+EXCLUDE_NETWORKS_FILE=${EXCLUDE_NETWORKS_FILE:=/etc/docker-gc-exclude-networks}
 
 for pid in $(pidof -s docker-gc); do
     if [[ $pid != $$ ]]; then
@@ -193,6 +195,16 @@ function volumes_log() {
     while IFS='' read -r volumeid
     do
         log "$prefix $volumeid"
+    done < "$filename"
+}
+
+function network_log() {
+    prefix=$1
+    filename=$2
+
+    while IFS='' read -r networkid
+    do
+        log "$prefix $networkid"
     done < "$filename"
 }
 
@@ -335,6 +347,35 @@ if [[ $REMOVE_VOLUMES -gt 0 ]]; then
         else
             volumes_log "Removing volume" volumes.reap
             xargs -n 1 $DOCKER volume rm < volumes.reap &>/dev/null || true
+        fi
+    fi
+fi
+
+if [[ $REMOVE_NETWORKS -gt 0 ]]; then
+    set +e
+    $DOCKER network ls -q &> /dev/null
+    NETWORKS=$?
+    set -e
+    # If docker network ls fails, then is probably not supported by either client or server
+    if [[ $NETWORKS -gt 0 ]]; then
+        set +e
+        VERSION=$($DOCKER version --format="Client: {{.Client.Version}} Server: {{.Server.Version}}" 2&>/dev/null)
+        FORMAT=$?
+        set -e
+        if [[ $FORMAT -gt 0 ]]; then
+            log "Removing networks is not supported for Docker < 1.9.0"
+        else
+            MESSAGE="Removing networks is not supported for for docker version "$($DOCKER version --format="Client: {{.Client.Version}} Server: {{.Server.Version}}") &
+            log "$MESSAGE"
+        fi
+    else
+        $DOCKER network ls -q | grep -v -f $EXCLUDE_NETWORKS_FILE > networks.reap
+
+        if [[ $DRY_RUN -gt 0 ]]; then
+            network_log "The following networks would have been removed" networks.reap
+        else
+            network_log "Removing network" networks.reap
+            xargs -n 1 $DOCKER network rm < networks.reap &>/dev/null || true
         fi
     fi
 fi

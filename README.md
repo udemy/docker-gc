@@ -14,6 +14,7 @@ A simple Docker container and image garbage collection script.
 * Containers that exited more than an hour ago are removed.
 * Images that don't belong to any remaining container after that are removed.
 * Optionally, remove volumes that are not associated to any remaining container after removal (Available only for docker >= 1.9.0)
+* Optionally, remove networks that are not associated to any remaining container after removal (Available only for docker >= 1.9.0)
 
 Although docker normally prevents removal of images that are in use by
 containers, we take extra care to not remove any image tags (e.g., ubuntu:14.04,
@@ -110,6 +111,14 @@ In such case, you can create `/etc/docker-gc-exclude-volumes` (or specify
 name patterns (in the `grep` sense), one per line, of volumes that will
 be excluded from garbage collection.
 
+### Excluding Networks From Gargbage Collection
+
+There can be occasions where you dont want to remove a dangling network.
+In such case, you can create `/etc/docker-gc-exclude-networks` (or specify
+`EXCLUDE_NETWORKS_FILE` env var with any path for such file), containing
+name patterns (in the `grep` sense), one per line, of volumes that will
+be excluded from garbage collection.
+
 ### Forcing deletion of images that have multiple tags
 
 By default, docker will not remove an image if it is tagged in multiple
@@ -191,3 +200,5 @@ $ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /etc:/etc -e R
 ```
 
 If you want to remove volumes only for a specified driver, you can do it by passing VOLUME_DELETE_ONLY_DRIVER env var set to the driver name.
+
+If you want to remove networks, you can do so by passing REMOVE_NETWORKS env var set to 1.
