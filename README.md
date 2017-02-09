@@ -31,7 +31,7 @@ container (see [below](#running-as-a-docker-container)).
 
 ```sh
 $ apt-get install git devscripts debhelper build-essential dh-make
-$ git clone https://github.com/spotify/docker-gc.git
+$ git clone https://github.com/udemy/docker-gc.git
 $ cd docker-gc
 $ debuild -us -uc -b
 ```
@@ -42,7 +42,7 @@ If you get lintian errors during `debuild`, try `debuild --no-lintian -us -uc -b
 ## Installing the Debian Package
 
 ```sh
-$ dpkg -i ../docker-gc_0.0.4_all.deb
+$ dpkg -i ../docker-gc_0.3.1_all.deb
 ```
 
 This installs the `docker-gc` script into `/usr/sbin`. If you want it to

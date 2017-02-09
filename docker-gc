@@ -56,10 +56,8 @@ SYSLOG_TAG=${SYSLOG_TAG:=docker-gc}
 DRY_RUN=${DRY_RUN:=0}
 EXCLUDE_DEAD=${EXCLUDE_DEAD:=0}
 REMOVE_VOLUMES=${REMOVE_VOLUMES:=0}
-EXCLUDE_VOLUMES_IDS_FILE=${EXCLUDE_VOLUMES_IDS_FILE:=/etc/docker-gc-exclude-volumes}
 VOLUME_DELETE_ONLY_DRIVER=${VOLUME_DELETE_ONLY_DRIVER:=local}
 REMOVE_NETWORKS=${REMOVE_NETWORKS:=0}
-EXCLUDE_NETWORKS_FILE=${EXCLUDE_NETWORKS_FILE:=/etc/docker-gc-exclude-networks}
 
 for pid in $(pidof -s docker-gc); do
     if [[ $pid != $$ ]]; then
@@ -72,7 +70,6 @@ trap "rm -f -- '$PID_DIR/dockergc'" EXIT
 
 echo $$ > $PID_DIR/dockergc
 
-
 EXCLUDE_FROM_GC=${EXCLUDE_FROM_GC:=/etc/docker-gc-exclude}
 if [ ! -f "$EXCLUDE_FROM_GC" ]
 then
@@ -83,6 +80,18 @@ EXCLUDE_CONTAINERS_FROM_GC=${EXCLUDE_CONTAINERS_FROM_GC:=/etc/docker-gc-exclude-
 if [ ! -f "$EXCLUDE_CONTAINERS_FROM_GC" ]
 then
   EXCLUDE_CONTAINERS_FROM_GC=/dev/null
+fi
+
+EXCLUDE_VOLUMES_IDS_FILE=${EXCLUDE_VOLUMES_IDS_FILE:=/etc/docker-gc-exclude-volumes}
+if [ ! -f "$EXCLUDE_VOLUMES_IDS_FILE" ]
+then
+  EXCLUDE_VOLUMES_IDS_FILE=/dev/null
+fi
+
+EXCLUDE_NETWORKS_FILE=${EXCLUDE_NETWORKS_FILE:=/etc/docker-gc-exclude-networks}
+if [ ! -f "$EXCLUDE_NETWORKS_FILE" ]
+then
+  EXCLUDE_NETWORKS_FILE=/dev/null
 fi
 
 EXCLUDE_IDS_FILE="exclude_ids"
