@@ -41,7 +41,7 @@
 
 set -o nounset
 set -o errexit
-
+UP_CONTAINER_GRACE_PERIOD_SECONDS=${UP_CONTAINER_GRACE_PERIOD_SECONDS:=86400}
 GRACE_PERIOD_SECONDS=${GRACE_PERIOD_SECONDS:=3600}
 STATE_DIR=${STATE_DIR:=/var/lib/docker-gc}
 REMOVE_ASSOCIATED_VOLUME=${REMOVE_ASSOCIATED_VOLUME=1}
@@ -58,6 +58,7 @@ EXCLUDE_DEAD=${EXCLUDE_DEAD:=0}
 REMOVE_VOLUMES=${REMOVE_VOLUMES:=0}
 VOLUME_DELETE_ONLY_DRIVER=${VOLUME_DELETE_ONLY_DRIVER:=local}
 REMOVE_NETWORKS=${REMOVE_NETWORKS:=0}
+INCLUDE_UP_CONTAINERS${INCLUDE_UP_CONTAINERS:=0}
 
 for pid in $(pidof -s docker-gc); do
     if [[ $pid != $$ ]]; then
@@ -263,6 +264,18 @@ do
         echo $line >> containers.reap.tmp
     fi
 done
+
+# If set to remove stale up containers due to faulty code cleanup, Remove those that have been alive for at least UP_CONTAINER_GRACE_PERIOD_SECONDS ago
+if [[ $INCLUDE_UP_CONTAINERS -gt 0 ]]; then
+    cat containers.running | while read line
+    do
+        STARTED=$(${DOCKER} inspect -f "{{json .State.StartedAt}}" ${line})
+        ELAPSED=$(elapsed_time $STARTED)
+        if [[ $ELAPSED -gt $UP_CONTAINER_GRACE_PERIOD_SECONDS ]]; then
+            echo $line >> containers.reap.tmp
+        fi
+    done
+fi
 
 # List containers that we will remove and exclude ids.
 cat containers.reap.tmp | sort | uniq | grep -v -f $EXCLUDE_CONTAINER_IDS_FILE > containers.reap || true
